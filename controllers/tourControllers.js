@@ -1,63 +1,100 @@
+const mongoose = require("mongoose");
 const Tour = require("../models/tourModel");
 
 // GET /tours
-const getAllTours = (req, res) => {
-  const tours = Tour.getAll();
-  res.json(tours);
+const getAllTours = async (req, res) => {
+  try {
+    const tours = await Tour.find().sort({ createdAt: -1 }); // Sort by creation date in descending order
+    res.json(tours);
+  } catch (error) {
+    res.status(500).json({ message: "error.message" });
+  }
 };
 
 // POST /tours
-const createTour = (req, res) => {
-  const newTour = Tour.addOne({ ...req.body }); // Spread the req.body object
-
-  if (newTour) {
+const createTour = async (req, res) => {
+  try {
+    const { name, info, image, price, duration, rating, season, specialOffer } =
+      req.body;
+    const newTour = await Tour.create({
+      name,
+      info,
+      image,
+      price,
+      duration,
+      rating,
+      season,
+      specialOffer,
+    });
     res.status(201).json(newTour); // 201 Created
-  } else {
-    // Handle error (e.g., failed to create tour)
-    res.status(400).json({ message: "Invalid tour data. Ensure all fields are provided, including 'season' and 'specialOffer'." });
+  } catch (error) {
+    res
+      .status(400)
+      .json({
+        message:
+          "Invalid tour data. Ensure all fields are provided, including 'season' and 'specialOffer'.",
+      });
   }
 };
- 
+
 // GET /tours/:tourId
-const getTourById = (req, res) => {
-  const tourId = req.params.tourId;
-  const tour = Tour.findById(tourId);
-  if (tour) {
+const getTourById = async (req, res) => {
+  try {
+    const {tourId} = req.params;
+    if (!mongoose.Types.ObjectId.isValid(tourId)) {
+      return res.status(400).json({ message: "Invalid tour ID" });
+    }
+    const tour = await Tour.findById(tourId);
+    if (!tour) {
+      res.status(404).json({ message: "Tour not found" });
+    }
     res.json(tour);
-  } else {
-    res.status(404).json({ message: "Tour not found" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 };
 
 // PUT /tours/:tourId
-const updateTour = (req, res) => {
-  const tourId = req.params.tourId;
-  if (isNaN(tourId)) {
-    return res.status(400).json({ message: "Invalid tour ID" });
-  }
-  const updatedTour = Tour.updateOneById(tourId, { ...req.body }); // Spread the req.body object
+const updateTour = async (req, res) => {
+  try {
+    const { tourId } = req.params;
 
-  if (updatedTour) {
+    if (!mongoose.Types.ObjectId.isValid(tourId)) {
+      return res.status(400).json({ message: "Invalid tour ID" });
+    }
+    const updatedTour = await Tour.findByIdAndUpdate(tourId, req.body, {
+      new: true,
+      runValidators: true,
+    }); // Spread the req.body object
+
+    if (!updatedTour) {
+      return res.status(404).json({ message: "Tour not found" });
+    }
+
     res.json(updatedTour);
-  } else {
-    // Handle update failure (e.g., tour not found)
-    res.status(404).json({ message: "Tour not found" });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
   }
 };
 
 // DELETE /tours/:tourId
-const deleteTour = (req, res) => {
-  const tourId = req.params.tourId;
-  if (isNaN(tourId)) {
-    return res.status(400).json({ message: "Invalid tour ID" });
-  }
-  const isDeleted = Tour.deleteOneById(tourId);
+const deleteTour = async (req, res) => {
+  try {
+    const { tourId } = req.params;
 
-  if (isDeleted) {
-    res.status(204).send(); // 204 No Content
-  } else {
-    // Handle deletion failure (e.g., tour not found)
-    res.status(404).json({ message: "Tour not found" });
+    if (!mongoose.Types.ObjectId.isValid(tourId)) {
+      return res.status(400).json({ message: "Invalid tour ID format" });
+    }
+
+    const deletedTour = await Tour.findByIdAndDelete(tourId);
+
+    if (!deletedTour) {
+      return res.status(404).json({ message: "Tour not found" });
+    }
+
+    res.status(204).send(); // No content
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 };
 
@@ -68,4 +105,3 @@ module.exports = {
   updateTour,
   deleteTour,
 };
-
