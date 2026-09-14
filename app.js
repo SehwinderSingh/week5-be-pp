@@ -1,4 +1,5 @@
-require('dotenv').config();
+require("dotenv").config();
+const port = process.env.PORT || 4000;
 const express = require("express");
 const app = express();
 const tourRouter = require("./routes/tourRouter");
@@ -11,10 +12,9 @@ app.use(morgan("dev"));
 // Middleware to parse JSON
 app.use(express.json());
 
-app.get('/', (req, res) => {
-  res.send('API is running');
+app.get("/", (req, res) => {
+  res.send("API is running");
 });
-
 
 // Use the tourRouter for all "/tours" routes
 app.use("/api/tours", tourRouter);
@@ -25,9 +25,7 @@ app.use("/api/users", userRouter);
 app.use(unknownEndpoint);
 // app.use(errorHandler);
 
-const port = process.env.PORT || 4000;
 // Start the server
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
- 
